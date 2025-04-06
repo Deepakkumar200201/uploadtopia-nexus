@@ -1,6 +1,6 @@
 
 import {
-  BrowserRouter as Router,
+  HashRouter as Router,
   Routes,
   Route,
   Navigate,
@@ -12,7 +12,6 @@ import Dashboard from "@/pages/dashboard/Dashboard";
 import MyFiles from "@/pages/dashboard/MyFiles";
 import Settings from "@/pages/dashboard/Settings";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import AppSidebar from "@/components/layout/AppSidebar";
 import RecycleBin from "@/pages/dashboard/RecycleBin";
 
 const AppRoutes = () => {
