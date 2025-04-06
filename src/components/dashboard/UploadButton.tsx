@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -74,6 +75,7 @@ const UploadButton = () => {
             uploadedFiles.push(newFile);
           });
           
+          // Check if localStorage is initialized, if not create an empty array
           const existingFiles = localStorage.getItem('terabox_files');
           const fileArray = existingFiles ? JSON.parse(existingFiles) : [];
           const updatedFiles = [...fileArray, ...uploadedFiles];
@@ -123,6 +125,7 @@ const UploadButton = () => {
       <Button 
         onClick={() => setIsDialogOpen(true)}
         className="relative overflow-hidden"
+        data-testid="upload-button"
       >
         <UploadIcon className="mr-2 h-4 w-4" />
         Upload Files

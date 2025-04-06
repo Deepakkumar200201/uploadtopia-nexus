@@ -1,4 +1,3 @@
-
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -6,14 +5,35 @@ import { Input } from "@/components/ui/input";
 import FileGrid from "@/components/dashboard/FileGrid";
 import UploadButton from "@/components/dashboard/UploadButton";
 import { GridIcon, ListIcon, FolderPlusIcon, ChevronDownIcon, SearchIcon } from "lucide-react";
-import { useState } from "react";
-import { mockFiles } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { File } from "@/lib/types";
 
 const MyFiles = () => {
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("name");
+  const [files, setFiles] = useState<File[]>([]);
+
+  useEffect(() => {
+    const loadFiles = () => {
+      const storedFiles = localStorage.getItem('terabox_files');
+      if (storedFiles) {
+        const parsedFiles = JSON.parse(storedFiles) as File[];
+        const activeFiles = parsedFiles.filter(file => !file.recycled);
+        setFiles(activeFiles);
+      }
+    };
+    
+    loadFiles();
+    
+    const handleFileUpdate = () => loadFiles();
+    window.addEventListener('filesupdated', handleFileUpdate);
+    
+    return () => {
+      window.removeEventListener('filesupdated', handleFileUpdate);
+    };
+  }, []);
 
   const handleCreateFolder = () => {
     toast.info("Create folder functionality coming soon");
@@ -99,7 +119,20 @@ const MyFiles = () => {
         </div>
       </div>
 
-      <FileGrid type={viewType} files={mockFiles} />
+      {files.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="bg-muted rounded-full p-4 mb-4">
+            <FileIcon className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-medium">No files yet</h3>
+          <p className="text-muted-foreground mt-1">Upload files to get started</p>
+          <Button onClick={() => document.querySelector<HTMLButtonElement>('[data-testid="upload-button"]')?.click()} className="mt-4">
+            Upload Files
+          </Button>
+        </div>
+      ) : (
+        <FileGrid type={viewType} files={files} />
+      )}
     </div>
   );
 };

@@ -10,13 +10,12 @@ import { GridIcon, ListIcon, FolderPlusIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { File } from "@/lib/types";
-import { mockFiles } from "@/lib/mock-data";
 
 const Dashboard = () => {
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
   const [user, setUser] = useState<{ name: string } | null>(null);
-  const [files, setFiles] = useState<File[]>(mockFiles);
-  const [recentFiles, setRecentFiles] = useState<File[]>(mockFiles.slice(0, 5));
+  const [files, setFiles] = useState<File[]>([]);
+  const [recentFiles, setRecentFiles] = useState<File[]>([]);
 
   useEffect(() => {
     const userData = localStorage.getItem("terabox_user");
@@ -26,11 +25,13 @@ const Dashboard = () => {
     
     // Load files from localStorage
     const loadFiles = () => {
-      const storedFiles = localStorage.getItem("terabox_files");
+      const storedFiles = localStorage.getItem('terabox_files');
       if (storedFiles) {
         const parsedFiles = JSON.parse(storedFiles) as File[];
-        setFiles(parsedFiles.length > 0 ? parsedFiles : mockFiles);
-        setRecentFiles(parsedFiles.length > 0 ? parsedFiles.slice(0, 5) : mockFiles.slice(0, 5));
+        // Only show files that aren't in the recycle bin
+        const activeFiles = parsedFiles.filter(file => !file.recycled);
+        setFiles(activeFiles);
+        setRecentFiles(activeFiles.slice(0, 5));
       }
     };
     

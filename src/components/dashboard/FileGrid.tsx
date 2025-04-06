@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
@@ -15,7 +14,6 @@ import { toast } from "sonner";
 import { FileIcon, FolderIcon, FileImageIcon, FileTextIcon, FileAudioIcon, FileVideoIcon, MoreVerticalIcon, DownloadIcon, ShareIcon, PencilIcon, TrashIcon, EyeIcon, RefreshCwIcon, XIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { formatFileSize } from "@/lib/utils";
-import { mockFiles } from "@/lib/mock-data";
 import { File } from "@/lib/types";
 
 interface FileGridProps {
@@ -24,7 +22,7 @@ interface FileGridProps {
   isRecycleBin?: boolean;
 }
 
-const FileGrid = ({ files = mockFiles, type = "grid", isRecycleBin = false }: FileGridProps) => {
+const FileGrid = ({ files = [], type = "grid", isRecycleBin = false }: FileGridProps) => {
   const [viewFile, setViewFile] = useState<File | null>(null);
   const [confirmDeleteFile, setConfirmDeleteFile] = useState<File | null>(null);
   const [localFiles, setLocalFiles] = useState<File[]>(files);
@@ -59,7 +57,6 @@ const FileGrid = ({ files = mockFiles, type = "grid", isRecycleBin = false }: Fi
         break;
       case "download":
         if (file.previewUrl) {
-          // Create an anchor element and trigger download
           const a = document.createElement('a');
           a.href = file.previewUrl;
           a.download = file.name;
@@ -79,10 +76,8 @@ const FileGrid = ({ files = mockFiles, type = "grid", isRecycleBin = false }: Fi
         break;
       case "delete":
         if (isRecycleBin) {
-          // Permanent delete
           setConfirmDeleteFile(file);
         } else {
-          // Move to recycle bin
           moveToRecycleBin(file);
         }
         break;
@@ -95,12 +90,10 @@ const FileGrid = ({ files = mockFiles, type = "grid", isRecycleBin = false }: Fi
   };
 
   const moveToRecycleBin = (file: File) => {
-    // Get existing files
     const storedFiles = localStorage.getItem('terabox_files');
     if (storedFiles) {
       const allFiles = JSON.parse(storedFiles) as File[];
       
-      // Find file and mark as recycled
       const updatedFiles = allFiles.map(f => {
         if (f.id === file.id) {
           return { ...f, recycled: true };
@@ -108,26 +101,21 @@ const FileGrid = ({ files = mockFiles, type = "grid", isRecycleBin = false }: Fi
         return f;
       });
       
-      // Update localStorage
       localStorage.setItem('terabox_files', JSON.stringify(updatedFiles));
       
-      // Update local state
       setLocalFiles(prevFiles => prevFiles.filter(f => f.id !== file.id));
       
       toast.success(`${file.name} moved to recycle bin`);
       
-      // Trigger event to refresh other components
       window.dispatchEvent(new CustomEvent('filesupdated'));
     }
   };
 
   const restoreFromRecycleBin = (file: File) => {
-    // Get existing files
     const storedFiles = localStorage.getItem('terabox_files');
     if (storedFiles) {
       const allFiles = JSON.parse(storedFiles) as File[];
       
-      // Find file and mark as not recycled
       const updatedFiles = allFiles.map(f => {
         if (f.id === file.id) {
           return { ...f, recycled: false };
@@ -135,15 +123,12 @@ const FileGrid = ({ files = mockFiles, type = "grid", isRecycleBin = false }: Fi
         return f;
       });
       
-      // Update localStorage
       localStorage.setItem('terabox_files', JSON.stringify(updatedFiles));
       
-      // Update local state
       setLocalFiles(prevFiles => prevFiles.filter(f => f.id !== file.id));
       
       toast.success(`${file.name} restored from recycle bin`);
       
-      // Trigger event to refresh other components
       window.dispatchEvent(new CustomEvent('filesupdated'));
     }
   };
@@ -151,26 +136,20 @@ const FileGrid = ({ files = mockFiles, type = "grid", isRecycleBin = false }: Fi
   const permanentlyDeleteFile = () => {
     if (!confirmDeleteFile) return;
     
-    // Get existing files
     const storedFiles = localStorage.getItem('terabox_files');
     if (storedFiles) {
       const allFiles = JSON.parse(storedFiles) as File[];
       
-      // Remove file completely
       const updatedFiles = allFiles.filter(f => f.id !== confirmDeleteFile.id);
       
-      // Update localStorage
       localStorage.setItem('terabox_files', JSON.stringify(updatedFiles));
       
-      // Update local state
       setLocalFiles(prevFiles => prevFiles.filter(f => f.id !== confirmDeleteFile.id));
       
       toast.success(`${confirmDeleteFile.name} permanently deleted`);
       
-      // Trigger event to refresh other components
       window.dispatchEvent(new CustomEvent('filesupdated'));
       
-      // Close dialog
       setConfirmDeleteFile(null);
     }
   };
@@ -377,7 +356,6 @@ const FileGrid = ({ files = mockFiles, type = "grid", isRecycleBin = false }: Fi
     );
   }
 
-  // List view with same recyclebin functionality
   return (
     <>
       <div className="file-list border rounded-lg divide-y">
