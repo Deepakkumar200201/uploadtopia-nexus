@@ -15,12 +15,34 @@ import { mockFiles } from "@/lib/mock-data";
 const Dashboard = () => {
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
   const [user, setUser] = useState<{ name: string } | null>(null);
+  const [files, setFiles] = useState<File[]>(mockFiles);
+  const [recentFiles, setRecentFiles] = useState<File[]>(mockFiles.slice(0, 5));
 
   useEffect(() => {
     const userData = localStorage.getItem("terabox_user");
     if (userData) {
       setUser(JSON.parse(userData));
     }
+    
+    // Load files from localStorage
+    const loadFiles = () => {
+      const storedFiles = localStorage.getItem("terabox_files");
+      if (storedFiles) {
+        const parsedFiles = JSON.parse(storedFiles) as File[];
+        setFiles(parsedFiles.length > 0 ? parsedFiles : mockFiles);
+        setRecentFiles(parsedFiles.length > 0 ? parsedFiles.slice(0, 5) : mockFiles.slice(0, 5));
+      }
+    };
+    
+    loadFiles();
+    
+    // Listen for file updates
+    const handleFileUpdate = () => loadFiles();
+    window.addEventListener('filesupdated', handleFileUpdate);
+    
+    return () => {
+      window.removeEventListener('filesupdated', handleFileUpdate);
+    };
   }, []);
 
   const handleCreateFolder = () => {
@@ -98,21 +120,21 @@ const Dashboard = () => {
           </div>
         </div>
         <TabsContent value="all" className="pt-4">
-          <FileGrid type={viewType} />
+          <FileGrid type={viewType} files={files} />
         </TabsContent>
         <TabsContent value="recent" className="pt-4">
-          <FileGrid type={viewType} files={mockFiles.slice(0, 5)} />
+          <FileGrid type={viewType} files={recentFiles} />
         </TabsContent>
         <TabsContent value="images" className="pt-4">
           <FileGrid 
             type={viewType} 
-            files={mockFiles.filter(file => file.type === "image")}
+            files={files.filter(file => file.type === "image")}
           />
         </TabsContent>
         <TabsContent value="documents" className="pt-4">
           <FileGrid 
             type={viewType} 
-            files={mockFiles.filter(file => file.type === "document")}
+            files={files.filter(file => file.type === "document")}
           />
         </TabsContent>
       </Tabs>

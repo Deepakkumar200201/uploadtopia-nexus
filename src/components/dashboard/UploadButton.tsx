@@ -1,29 +1,31 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { UploadIcon, XIcon, CheckIcon, FileIcon } from "lucide-react";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
+import { File } from "@/lib/types";
+
+<lov-add-dependency>uuid@latest</lov-add-dependency>
 
 const UploadButton = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<FileList | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const selectedFiles = Array.from(e.target.files);
-      setFiles(selectedFiles);
+      setFiles(e.target.files);
     }
   };
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const selectedFiles = Array.from(e.dataTransfer.files);
-      setFiles(selectedFiles);
+      setFiles(e.dataTransfer.files);
     }
   };
 
@@ -32,7 +34,7 @@ const UploadButton = () => {
   };
 
   const handleUpload = () => {
-    if (files.length === 0) {
+    if (!files || files.length === 0) {
       toast.error("Please select files to upload");
       return;
     }
@@ -46,19 +48,62 @@ const UploadButton = () => {
         if (prev >= 100) {
           clearInterval(interval);
           setUploading(false);
-          toast.success(`Successfully uploaded ${files.length} files`);
           
-          // Get current user storage info and update
+          // Create file objects and save to local storage
+          const uploadedFiles: File[] = [];
+          
+          Array.from(files).forEach(file => {
+            // Create ObjectURL for preview
+            const previewUrl = URL.createObjectURL(file);
+            
+            // Determine file type
+            let fileType: "image" | "document" | "video" | "audio" | "other" = "other";
+            if (file.type.startsWith("image/")) fileType = "image";
+            else if (file.type.startsWith("video/")) fileType = "video";
+            else if (file.type.startsWith("audio/")) fileType = "audio";
+            else if (file.type.includes("pdf") || file.type.includes("document") || 
+                    file.type.includes("text/") || file.name.endsWith(".doc") || 
+                    file.name.endsWith(".docx") || file.name.endsWith(".txt")) {
+              fileType = "document";
+            }
+            
+            // Create file object
+            const newFile: File = {
+              id: uuidv4(),
+              name: file.name,
+              type: fileType,
+              size: file.size,
+              createdAt: new Date().toISOString(),
+              modifiedAt: new Date().toISOString(),
+              path: `/files/${file.name}`,
+              previewUrl
+            };
+            
+            uploadedFiles.push(newFile);
+          });
+          
+          // Save to localStorage
+          const existingFiles = localStorage.getItem('terabox_files');
+          const fileArray = existingFiles ? JSON.parse(existingFiles) : [];
+          const updatedFiles = [...fileArray, ...uploadedFiles];
+          localStorage.setItem('terabox_files', JSON.stringify(updatedFiles));
+          
+          // Update storage info
           const userData = localStorage.getItem("terabox_user");
           if (userData) {
             const user = JSON.parse(userData);
-            const totalFileSize = files.reduce((acc, file) => acc + file.size, 0) / (1024 * 1024 * 1024);
+            const totalFileSize = Array.from(files).reduce((acc, file) => acc + file.size, 0) / (1024 * 1024 * 1024);
             user.storage.used = Math.min(user.storage.total, user.storage.used + totalFileSize);
             localStorage.setItem("terabox_user", JSON.stringify(user));
           }
           
-          setFiles([]);
+          toast.success(`Successfully uploaded ${files.length} files`);
+          setFiles(null);
           setIsDialogOpen(false);
+          
+          // Trigger a refresh of the main component
+          window.dispatchEvent(new CustomEvent('filesupdated'));
+          
           return 0;
         }
         return prev + 5;
@@ -67,7 +112,13 @@ const UploadButton = () => {
   };
 
   const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    if (files) {
+      const dt = new DataTransfer();
+      Array.from(files).forEach((file, i) => {
+        if (i !== index) dt.items.add(file);
+      });
+      setFiles(dt.files);
+    }
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -99,12 +150,12 @@ const UploadButton = () => {
 
           <div
             className={`mt-4 border-2 border-dashed rounded-lg p-8 text-center ${
-              files.length > 0 ? "border-primary/70" : "border-muted-foreground/30"
+              files && files.length > 0 ? "border-primary/70" : "border-muted-foreground/30"
             }`}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
           >
-            {files.length === 0 ? (
+            {!files || files.length === 0 ? (
               <div className="flex flex-col items-center">
                 <UploadIcon className="h-12 w-12 text-muted-foreground/70 mb-4" />
                 <p className="text-muted-foreground mb-2">Drag files here or click to browse</p>
@@ -125,7 +176,7 @@ const UploadButton = () => {
             ) : (
               <div className="space-y-4">
                 <div className="max-h-60 overflow-y-auto space-y-2">
-                  {files.map((file, index) => (
+                  {Array.from(files).map((file, index) => (
                     <div
                       key={index}
                       className="flex items-center justify-between bg-muted/50 rounded-md p-2"
@@ -161,7 +212,7 @@ const UploadButton = () => {
                   </div>
                 ) : (
                   <div className="flex justify-between">
-                    <Button variant="outline" onClick={() => setFiles([])}>
+                    <Button variant="outline" onClick={() => setFiles(null)}>
                       Clear All
                     </Button>
                     <Button onClick={handleUpload}>

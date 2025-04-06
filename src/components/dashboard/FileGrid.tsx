@@ -24,6 +24,7 @@ interface FileGridProps {
 
 const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
   const [viewFile, setViewFile] = useState<File | null>(null);
+  const [localFiles, setLocalFiles] = useState<File[]>(files);
 
   const getFileIcon = (fileType: string, size = 4) => {
     const iconSize = `h-${size} w-${size}`;
@@ -50,7 +51,18 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
         setViewFile(file);
         break;
       case "download":
-        toast.success(`Downloading ${file.name}...`);
+        if (file.previewUrl) {
+          // Create an anchor element and trigger download
+          const a = document.createElement('a');
+          a.href = file.previewUrl;
+          a.download = file.name;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          toast.success(`Downloading ${file.name}`);
+        } else {
+          toast.error(`No file content available to download`);
+        }
         break;
       case "rename":
         toast.info(`Rename functionality coming soon`);
@@ -59,6 +71,7 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
         toast.info(`Share functionality coming soon`);
         break;
       case "delete":
+        setLocalFiles(prevFiles => prevFiles.filter(f => f.id !== file.id));
         toast.success(`${file.name} moved to trash`);
         break;
       default:
@@ -124,7 +137,7 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
     return (
       <>
         <div className="file-grid">
-          {files.map((file) => (
+          {localFiles.map((file) => (
             <Card key={file.id} className="overflow-hidden group">
               <div 
                 className="aspect-square relative cursor-pointer"
@@ -238,7 +251,7 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
   return (
     <>
       <div className="file-list border rounded-lg divide-y">
-        {files.map((file) => (
+        {localFiles.map((file) => (
           <div 
             key={file.id} 
             className="file-list-item group cursor-pointer"
