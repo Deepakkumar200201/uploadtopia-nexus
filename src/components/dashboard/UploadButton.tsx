@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -7,8 +6,6 @@ import { UploadIcon, XIcon, CheckIcon, FileIcon } from "lucide-react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { File } from "@/lib/types";
-
-<lov-add-dependency>uuid@latest</lov-add-dependency>
 
 const UploadButton = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -42,21 +39,17 @@ const UploadButton = () => {
     setUploading(true);
     setProgress(0);
 
-    // Simulate progress
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
           setUploading(false);
           
-          // Create file objects and save to local storage
           const uploadedFiles: File[] = [];
           
           Array.from(files).forEach(file => {
-            // Create ObjectURL for preview
             const previewUrl = URL.createObjectURL(file);
             
-            // Determine file type
             let fileType: "image" | "document" | "video" | "audio" | "other" = "other";
             if (file.type.startsWith("image/")) fileType = "image";
             else if (file.type.startsWith("video/")) fileType = "video";
@@ -67,7 +60,6 @@ const UploadButton = () => {
               fileType = "document";
             }
             
-            // Create file object
             const newFile: File = {
               id: uuidv4(),
               name: file.name,
@@ -82,13 +74,11 @@ const UploadButton = () => {
             uploadedFiles.push(newFile);
           });
           
-          // Save to localStorage
           const existingFiles = localStorage.getItem('terabox_files');
           const fileArray = existingFiles ? JSON.parse(existingFiles) : [];
           const updatedFiles = [...fileArray, ...uploadedFiles];
           localStorage.setItem('terabox_files', JSON.stringify(updatedFiles));
           
-          // Update storage info
           const userData = localStorage.getItem("terabox_user");
           if (userData) {
             const user = JSON.parse(userData);
@@ -101,7 +91,6 @@ const UploadButton = () => {
           setFiles(null);
           setIsDialogOpen(false);
           
-          // Trigger a refresh of the main component
           window.dispatchEvent(new CustomEvent('filesupdated'));
           
           return 0;
