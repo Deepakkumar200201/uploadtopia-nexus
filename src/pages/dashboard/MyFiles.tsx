@@ -1,10 +1,11 @@
+
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "@/components/ui/breadcrumb";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import FileGrid from "@/components/dashboard/FileGrid";
 import UploadButton from "@/components/dashboard/UploadButton";
-import { GridIcon, ListIcon, FolderPlusIcon, ChevronDownIcon, SearchIcon } from "lucide-react";
+import { GridIcon, ListIcon, FolderPlusIcon, ChevronDownIcon, SearchIcon, FileIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { File } from "@/lib/types";
