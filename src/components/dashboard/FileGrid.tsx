@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   DropdownMenu, 
@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { FileIcon, FolderIcon, FileImageIcon, FileTextIcon, FileAudioIcon, FileVideoIcon, MoreVerticalIcon, DownloadIcon, ShareIcon, PencilIcon, TrashIcon, EyeIcon } from "lucide-react";
+import { FileIcon, FolderIcon, FileImageIcon, FileTextIcon, FileAudioIcon, FileVideoIcon, MoreVerticalIcon, DownloadIcon, ShareIcon, PencilIcon, TrashIcon, EyeIcon, RefreshCwIcon, XIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { formatFileSize } from "@/lib/utils";
 import { mockFiles } from "@/lib/mock-data";
@@ -20,11 +21,17 @@ import { File } from "@/lib/types";
 interface FileGridProps {
   files?: File[];
   type?: "grid" | "list";
+  isRecycleBin?: boolean;
 }
 
-const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
+const FileGrid = ({ files = mockFiles, type = "grid", isRecycleBin = false }: FileGridProps) => {
   const [viewFile, setViewFile] = useState<File | null>(null);
+  const [confirmDeleteFile, setConfirmDeleteFile] = useState<File | null>(null);
   const [localFiles, setLocalFiles] = useState<File[]>(files);
+
+  useEffect(() => {
+    setLocalFiles(files);
+  }, [files]);
 
   const getFileIcon = (fileType: string, size = 4) => {
     const iconSize = `h-${size} w-${size}`;
@@ -71,11 +78,100 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
         toast.info(`Share functionality coming soon`);
         break;
       case "delete":
-        setLocalFiles(prevFiles => prevFiles.filter(f => f.id !== file.id));
-        toast.success(`${file.name} moved to trash`);
+        if (isRecycleBin) {
+          // Permanent delete
+          setConfirmDeleteFile(file);
+        } else {
+          // Move to recycle bin
+          moveToRecycleBin(file);
+        }
+        break;
+      case "restore":
+        restoreFromRecycleBin(file);
         break;
       default:
         break;
+    }
+  };
+
+  const moveToRecycleBin = (file: File) => {
+    // Get existing files
+    const storedFiles = localStorage.getItem('terabox_files');
+    if (storedFiles) {
+      const allFiles = JSON.parse(storedFiles) as File[];
+      
+      // Find file and mark as recycled
+      const updatedFiles = allFiles.map(f => {
+        if (f.id === file.id) {
+          return { ...f, recycled: true };
+        }
+        return f;
+      });
+      
+      // Update localStorage
+      localStorage.setItem('terabox_files', JSON.stringify(updatedFiles));
+      
+      // Update local state
+      setLocalFiles(prevFiles => prevFiles.filter(f => f.id !== file.id));
+      
+      toast.success(`${file.name} moved to recycle bin`);
+      
+      // Trigger event to refresh other components
+      window.dispatchEvent(new CustomEvent('filesupdated'));
+    }
+  };
+
+  const restoreFromRecycleBin = (file: File) => {
+    // Get existing files
+    const storedFiles = localStorage.getItem('terabox_files');
+    if (storedFiles) {
+      const allFiles = JSON.parse(storedFiles) as File[];
+      
+      // Find file and mark as not recycled
+      const updatedFiles = allFiles.map(f => {
+        if (f.id === file.id) {
+          return { ...f, recycled: false };
+        }
+        return f;
+      });
+      
+      // Update localStorage
+      localStorage.setItem('terabox_files', JSON.stringify(updatedFiles));
+      
+      // Update local state
+      setLocalFiles(prevFiles => prevFiles.filter(f => f.id !== file.id));
+      
+      toast.success(`${file.name} restored from recycle bin`);
+      
+      // Trigger event to refresh other components
+      window.dispatchEvent(new CustomEvent('filesupdated'));
+    }
+  };
+
+  const permanentlyDeleteFile = () => {
+    if (!confirmDeleteFile) return;
+    
+    // Get existing files
+    const storedFiles = localStorage.getItem('terabox_files');
+    if (storedFiles) {
+      const allFiles = JSON.parse(storedFiles) as File[];
+      
+      // Remove file completely
+      const updatedFiles = allFiles.filter(f => f.id !== confirmDeleteFile.id);
+      
+      // Update localStorage
+      localStorage.setItem('terabox_files', JSON.stringify(updatedFiles));
+      
+      // Update local state
+      setLocalFiles(prevFiles => prevFiles.filter(f => f.id !== confirmDeleteFile.id));
+      
+      toast.success(`${confirmDeleteFile.name} permanently deleted`);
+      
+      // Trigger event to refresh other components
+      window.dispatchEvent(new CustomEvent('filesupdated'));
+      
+      // Close dialog
+      setConfirmDeleteFile(null);
     }
   };
 
@@ -172,16 +268,18 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
                   >
                     <EyeIcon className="h-4 w-4" />
                   </Button>
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFileAction("download", file);
-                    }}
-                  >
-                    <DownloadIcon className="h-4 w-4" />
-                  </Button>
+                  {!isRecycleBin && (
+                    <Button 
+                      variant="secondary" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleFileAction("download", file);
+                      }}
+                    >
+                      <DownloadIcon className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
               <CardContent className="p-3">
@@ -203,27 +301,37 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
                         <EyeIcon className="mr-2 h-4 w-4" />
                         Preview
                       </DropdownMenuItem>
-                      {file.type !== "folder" && (
-                        <DropdownMenuItem onClick={() => handleFileAction("download", file)}>
-                          <DownloadIcon className="mr-2 h-4 w-4" />
-                          Download
+                      {!isRecycleBin && (
+                        <>
+                          {file.type !== "folder" && (
+                            <DropdownMenuItem onClick={() => handleFileAction("download", file)}>
+                              <DownloadIcon className="mr-2 h-4 w-4" />
+                              Download
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => handleFileAction("share", file)}>
+                            <ShareIcon className="mr-2 h-4 w-4" />
+                            Share
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleFileAction("rename", file)}>
+                            <PencilIcon className="mr-2 h-4 w-4" />
+                            Rename
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {isRecycleBin && (
+                        <DropdownMenuItem onClick={() => handleFileAction("restore", file)}>
+                          <RefreshCwIcon className="mr-2 h-4 w-4" />
+                          Restore
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem onClick={() => handleFileAction("share", file)}>
-                        <ShareIcon className="mr-2 h-4 w-4" />
-                        Share
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleFileAction("rename", file)}>
-                        <PencilIcon className="mr-2 h-4 w-4" />
-                        Rename
-                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         className="text-destructive focus:text-destructive"
                         onClick={() => handleFileAction("delete", file)}
                       >
                         <TrashIcon className="mr-2 h-4 w-4" />
-                        Delete
+                        {isRecycleBin ? "Delete permanently" : "Move to trash"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -243,11 +351,33 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
             </DialogContent>
           </Dialog>
         )}
+
+        {confirmDeleteFile && (
+          <AlertDialog open={!!confirmDeleteFile} onOpenChange={() => setConfirmDeleteFile(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Permanently delete file?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete {confirmDeleteFile.name}.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction 
+                  onClick={permanentlyDeleteFile}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete permanently
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </>
     );
   }
 
-  // List view
+  // List view with same recyclebin functionality
   return (
     <>
       <div className="file-list border rounded-lg divide-y">
@@ -285,7 +415,7 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
                 >
                   <EyeIcon className="h-4 w-4" />
                 </Button>
-                {file.type !== "folder" && (
+                {!isRecycleBin && file.type !== "folder" && (
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -296,6 +426,19 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
                     }}
                   >
                     <DownloadIcon className="h-4 w-4" />
+                  </Button>
+                )}
+                {isRecycleBin && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFileAction("restore", file);
+                    }}
+                  >
+                    <RefreshCwIcon className="h-4 w-4" />
                   </Button>
                 )}
                 <DropdownMenu>
@@ -314,27 +457,37 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
                       <EyeIcon className="mr-2 h-4 w-4" />
                       Preview
                     </DropdownMenuItem>
-                    {file.type !== "folder" && (
-                      <DropdownMenuItem onClick={() => handleFileAction("download", file)}>
-                        <DownloadIcon className="mr-2 h-4 w-4" />
-                        Download
+                    {!isRecycleBin && (
+                      <>
+                        {file.type !== "folder" && (
+                          <DropdownMenuItem onClick={() => handleFileAction("download", file)}>
+                            <DownloadIcon className="mr-2 h-4 w-4" />
+                            Download
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => handleFileAction("share", file)}>
+                          <ShareIcon className="mr-2 h-4 w-4" />
+                          Share
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleFileAction("rename", file)}>
+                          <PencilIcon className="mr-2 h-4 w-4" />
+                          Rename
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {isRecycleBin && (
+                      <DropdownMenuItem onClick={() => handleFileAction("restore", file)}>
+                        <RefreshCwIcon className="mr-2 h-4 w-4" />
+                        Restore
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => handleFileAction("share", file)}>
-                      <ShareIcon className="mr-2 h-4 w-4" />
-                      Share
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleFileAction("rename", file)}>
-                      <PencilIcon className="mr-2 h-4 w-4" />
-                      Rename
-                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem 
                       className="text-destructive focus:text-destructive"
                       onClick={() => handleFileAction("delete", file)}
                     >
                       <TrashIcon className="mr-2 h-4 w-4" />
-                      Delete
+                      {isRecycleBin ? "Delete permanently" : "Move to trash"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -353,6 +506,28 @@ const FileGrid = ({ files = mockFiles, type = "grid" }: FileGridProps) => {
             {renderFilePreview(viewFile)}
           </DialogContent>
         </Dialog>
+      )}
+
+      {confirmDeleteFile && (
+        <AlertDialog open={!!confirmDeleteFile} onOpenChange={() => setConfirmDeleteFile(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Permanently delete file?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete {confirmDeleteFile.name}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={permanentlyDeleteFile}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete permanently
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       )}
     </>
   );

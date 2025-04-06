@@ -10,6 +10,7 @@ export interface File {
   starred?: boolean;
   previewUrl?: string;
   shared?: boolean;
+  recycled?: boolean;
 }
 
 export interface User {

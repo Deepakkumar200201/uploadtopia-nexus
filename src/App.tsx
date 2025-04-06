@@ -1,37 +1,57 @@
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { useAuth } from "@/hooks/use-auth";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import Dashboard from "@/pages/dashboard/Dashboard";
+import MyFiles from "@/pages/dashboard/MyFiles";
+import Settings from "@/pages/dashboard/Settings";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import AppSidebar from "@/components/layout/AppSidebar";
+import RecycleBin from "@/pages/dashboard/RecycleBin";
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/hooks/use-theme";
-import Login from "./pages/Login";
-import Dashboard from "./pages/dashboard/Dashboard";
-import MyFiles from "./pages/dashboard/MyFiles";
-import Settings from "./pages/dashboard/Settings";
-import NotFound from "./pages/NotFound";
-import DashboardLayout from "./components/layout/DashboardLayout";
+const App = () => {
+  const { isLoggedIn } = useAuth();
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/dashboard" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
-            <Route path="/dashboard/my-files" element={<DashboardLayout><MyFiles /></DashboardLayout>} />
-            <Route path="/dashboard/settings" element={<DashboardLayout><Settings /></DashboardLayout>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+  return (
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isLoggedIn ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
+          }
+        />
+        <Route
+          path="/login"
+          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Login />}
+        />
+        <Route
+          path="/register"
+          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Register />}
+        />
+        <Route
+          path="/dashboard"
+          element={
+            isLoggedIn ? (
+              <DashboardLayout />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }
+        >
+          <Route index element={<Dashboard />} />
+          <Route path="my-files" element={<MyFiles />} />
+          <Route path="recycle-bin" element={<RecycleBin />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+};
 
 export default App;
