@@ -22,7 +22,7 @@ const Register = () => {
         </div>
         <h1 className="text-3xl font-bold">TeraBox</h1>
       </div>
-      <AuthForm isRegister />
+      <AuthForm isRegister={true} />
     </div>
   );
 };

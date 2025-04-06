@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-const AuthForm = () => {
+interface AuthFormProps {
+  isRegister?: boolean;
+}
+
+const AuthForm = ({ isRegister = false }: AuthFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -110,7 +113,7 @@ const AuthForm = () => {
 
   return (
     <div className="mx-auto max-w-md w-full p-4 animate-fade-in">
-      <Tabs defaultValue="login" className="w-full">
+      <Tabs defaultValue={isRegister ? "register" : "login"} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="login">Login</TabsTrigger>
           <TabsTrigger value="register">Register</TabsTrigger>
