@@ -4,6 +4,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import AppSidebar from "./AppSidebar";
 import Header from "./Header";
 import RequireAuth from "../auth/RequireAuth";
+import { Outlet } from "react-router-dom";
 
 interface DashboardLayoutProps {
   children: ReactNode;
