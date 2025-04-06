@@ -68,7 +68,10 @@ const StorageOverview = () => {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => `${value.toFixed(1)} GB`} />
+                <Tooltip formatter={(value) => {
+                  // Check if value is a number before calling toFixed
+                  return typeof value === 'number' ? `${value.toFixed(1)} GB` : `${value} GB`;
+                }} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>

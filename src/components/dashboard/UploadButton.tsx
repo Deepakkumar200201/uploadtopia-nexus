@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { UploadIcon, XIcon, CheckIcon } from "lucide-react";
+import { UploadIcon, XIcon, CheckIcon, FileIcon } from "lucide-react";
 import { toast } from "sonner";
 
 const UploadButton = () => {

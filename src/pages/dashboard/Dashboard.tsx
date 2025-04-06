@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { GridIcon, ListIcon, FolderPlusIcon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { File } from "@/lib/types";
+import { mockFiles } from "@/lib/mock-data";
 
 const Dashboard = () => {
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
@@ -99,22 +101,18 @@ const Dashboard = () => {
           <FileGrid type={viewType} />
         </TabsContent>
         <TabsContent value="recent" className="pt-4">
-          <FileGrid type={viewType} files={
-            [...(viewType === "grid" ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6]).map(i => 
-              i < 0 ? undefined : import.meta.glob('@/lib/mock-data.ts')[i]
-            )]
-          } />
+          <FileGrid type={viewType} files={mockFiles.slice(0, 5)} />
         </TabsContent>
         <TabsContent value="images" className="pt-4">
           <FileGrid 
             type={viewType} 
-            files={[...Array(15)].map((_, i) => import.meta.glob('@/lib/mock-data.ts')[i]).filter(file => file?.type === "image")}
+            files={mockFiles.filter(file => file.type === "image")}
           />
         </TabsContent>
         <TabsContent value="documents" className="pt-4">
           <FileGrid 
             type={viewType} 
-            files={[...Array(15)].map((_, i) => import.meta.glob('@/lib/mock-data.ts')[i]).filter(file => file?.type === "document")}
+            files={mockFiles.filter(file => file.type === "document")}
           />
         </TabsContent>
       </Tabs>

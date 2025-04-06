@@ -12,7 +12,7 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <RequireAuth>
-      <SidebarProvider defaultWidth={260} collapsedWidth={0}>
+      <SidebarProvider>
         <div className="flex min-h-screen w-full">
           <AppSidebar />
           <div className="flex flex-col flex-1 overflow-hidden">
