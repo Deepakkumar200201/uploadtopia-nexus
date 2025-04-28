@@ -8,7 +8,7 @@
 
 There are several ways of editing your application.
 
-**Use Lovable**
+**Use love**
 
 Simply visit the [ Project] and start prompting.
 
